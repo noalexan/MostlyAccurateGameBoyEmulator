@@ -25,5 +25,5 @@ add_library(gbmu STATIC
 
 add_executable(emulator src/main.cpp)
 
-target_link_libraries(gbmu ${SDL2_LIBRARIES} OpenSSL::Crypto)
-target_link_libraries(emulator gbmu)
+target_link_libraries(gbmu OpenSSL::Crypto)
+target_link_libraries(emulator gbmu ${SDL2_LIBRARIES})

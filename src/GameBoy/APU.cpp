@@ -4,10 +4,20 @@
 
 using namespace GBMU;
 
-void APU::audioCallback(void *userdata, u8 *stream, int len)
+APU::APU(GameBoy &_gb) : gb(_gb)
 {
-	APU         *apu                  = reinterpret_cast<APU *>(userdata);
+	gb.getMMU().register_handler_range(
+	    0xff10, 0xff26, [this](u16 addr) { return read_byte(addr); },
+	    [this](u16 addr, u8 value) { write_byte(addr, value); });
+	gb.getMMU().register_handler_range(
+	    0xff30, 0xff3f, [this](u16 addr) { return read_byte(addr); },
+	    [this](u16 addr, u8 value) { write_byte(addr, value); });
+}
 
+APU::~APU() {}
+
+void APU::compute_audio()
+{
 	static float ch1_phase            = 0.0f;
 	static int   ch1_length_counter   = 0;
 	static int   ch1_envelope_counter = 0;
@@ -21,86 +31,79 @@ void APU::audioCallback(void *userdata, u8 *stream, int len)
 	static int   ch2_envelope_counter = 0;
 	static int   ch2_envelope_volume  = 0;
 
-	SDL_memset(stream, 0, len);
+	samples.fill(0);
 
-	if (!(apu->nr52 & AUDIO_ENABLE))
+	if (!(nr52 & AUDIO_ENABLE))
 		return;
 
-	s16               *samples        = reinterpret_cast<s16 *>(stream);
-	int                count          = len / sizeof(s16) / 2;
+	const float        left_volume            = (float)(((nr50 & LEFT_VOLUME) >> 4) + 1) / 8.0f;
+	const float        right_volume           = (float)((nr50 & RIGHT_VOLUME) + 1) / 8.0f;
 
-	const float        left_volume    = (float)(((apu->nr50 & LEFT_VOLUME) >> 4) + 1) / 8.0f;
-	const float        right_volume   = (float)((apu->nr50 & RIGHT_VOLUME) + 1) / 8.0f;
-
-	static const float DUTY_CYCLES[4] = {0.125f, 0.25f, 0.5f, 0.75f};
+	static const float DUTY_CYCLES[4]         = {0.125f, 0.25f, 0.5f, 0.75f};
 
 	const int          SAMPLES_PER_FRAME_STEP = 44100 / 512;
 
-	if (apu->nr14 & TRIGGER) {
-		ch1_phase             = 0.0f;
-		apu->nr52            |= CHANNEL_1_ON;
-		apu->nr14            &= ~TRIGGER;
+	if (nr14 & TRIGGER) {
+		ch1_phase  = 0.0f;
+		nr52      |= CHANNEL_1_ON;
+		nr14      &= ~TRIGGER;
 
-		ch1_length_counter    = (apu->nr14 & LENGTH_ENABLE)
-		                            ? (64 - (apu->nr11 & LENGTH_TIMER_MASK)) * (44100 / 256)
-		                            : 0;
+		ch1_length_counter =
+		    (nr14 & LENGTH_ENABLE) ? (64 - (nr11 & LENGTH_TIMER_MASK)) * (44100 / 256) : 0;
 
-		ch1_envelope_volume   = (apu->nr12 & INITIAL_VOLUME) >> 4;
-		int envelope_period   = apu->nr12 & ENVELOPE_PERIOD;
-		ch1_envelope_counter  = envelope_period * (44100 / 64);
+		ch1_envelope_volume  = (nr12 & INITIAL_VOLUME) >> 4;
+		int envelope_period  = nr12 & ENVELOPE_PERIOD;
+		ch1_envelope_counter = envelope_period * (44100 / 64);
 
-		u16 period            = ((apu->nr14 & PERIOD_HIGH_MASK) << 8) | apu->nr13;
-		ch1_shadow_frequency  = period;
-		int sweep_period      = (apu->nr10 & SWEEP_TIME_MASK) >> 4;
-		int sweep_shift       = apu->nr10 & SWEEP_SHIFT;
-		ch1_sweep_counter     = sweep_period * SAMPLES_PER_FRAME_STEP;
-		ch1_sweep_enabled     = (sweep_period != 0 || sweep_shift != 0);
+		u16 period           = ((nr14 & PERIOD_HIGH_MASK) << 8) | nr13;
+		ch1_shadow_frequency = period;
+		int sweep_period     = (nr10 & SWEEP_TIME_MASK) >> 4;
+		int sweep_shift      = nr10 & SWEEP_SHIFT;
+		ch1_sweep_counter    = sweep_period * SAMPLES_PER_FRAME_STEP;
+		ch1_sweep_enabled    = (sweep_period != 0 || sweep_shift != 0);
 
-		if ((apu->nr12 & 0xF8) == 0)
-			apu->nr52 &= ~CHANNEL_1_ON;
+		if ((nr12 & 0xF8) == 0)
+			nr52 &= ~CHANNEL_1_ON;
 	}
 
-	if (apu->nr52 & CHANNEL_1_ON) {
-		u16   period          = ((apu->nr14 & PERIOD_HIGH_MASK) << 8) | apu->nr13;
+	if (nr52 & CHANNEL_1_ON) {
+		u16   period          = ((nr14 & PERIOD_HIGH_MASK) << 8) | nr13;
 		float frequency       = 131072.0f / (float)(2048 - period);
-		float duty_threshold  = DUTY_CYCLES[(apu->nr11 >> 6) & 0x03];
+		float duty_threshold  = DUTY_CYCLES[(nr11 >> 6) & 0x03];
 		float period_samples  = 44100.0f / frequency;
 
-		int   envelope_period = apu->nr12 & ENVELOPE_PERIOD;
-		int   sweep_period    = (apu->nr10 & SWEEP_TIME_MASK) >> 4;
-		int   sweep_shift     = apu->nr10 & SWEEP_SHIFT;
+		int   envelope_period = nr12 & ENVELOPE_PERIOD;
+		int   sweep_period    = (nr10 & SWEEP_TIME_MASK) >> 4;
+		int   sweep_shift     = nr10 & SWEEP_SHIFT;
 
-		for (int i = 0; i < count; i++) {
-			if ((apu->nr14 & LENGTH_ENABLE) && ch1_length_counter > 0 &&
-			    --ch1_length_counter <= 0) {
-				apu->nr52 &= ~CHANNEL_1_ON;
+		for (int i = 0; i < AUDIO_SAMPLES; i++) {
+			if ((nr14 & LENGTH_ENABLE) && ch1_length_counter > 0 && --ch1_length_counter <= 0) {
+				nr52 &= ~CHANNEL_1_ON;
 				break;
 			}
 
 			if (envelope_period != 0 && ch1_envelope_counter > 0 && --ch1_envelope_counter <= 0) {
-				ch1_envelope_volume  += (apu->nr12 & ENVELOPE_DIRECTION)
-				                            ? (ch1_envelope_volume < 15)
-				                            : -(ch1_envelope_volume > 0);
+				ch1_envelope_volume  += (nr12 & ENVELOPE_DIRECTION) ? (ch1_envelope_volume < 15)
+				                                                    : -(ch1_envelope_volume > 0);
 				ch1_envelope_counter  = envelope_period * (44100 / 64);
 			}
 
 			if (ch1_sweep_enabled && sweep_period != 0 && ch1_sweep_counter > 0 &&
 			    --ch1_sweep_counter <= 0) {
 				u16 new_period;
-				u16 delta = ch1_shadow_frequency >> sweep_shift;
+				u16 delta  = ch1_shadow_frequency >> sweep_shift;
 
-				new_period =
-				    ch1_shadow_frequency + ((apu->nr10 & SWEEP_DIRECTION) ? -delta : delta);
+				new_period = ch1_shadow_frequency + ((nr10 & SWEEP_DIRECTION) ? -delta : delta);
 
 				if (new_period > 2047) {
-					apu->nr52 &= ~CHANNEL_1_ON;
+					nr52 &= ~CHANNEL_1_ON;
 					break;
 				}
 
 				if (sweep_shift != 0) {
 					ch1_shadow_frequency = new_period;
-					apu->nr13            = new_period & 0xFF;
-					apu->nr14            = (apu->nr14 & 0xF8) | ((new_period >> 8) & 0x07);
+					nr13                 = new_period & 0xFF;
+					nr14                 = (nr14 & 0xF8) | ((new_period >> 8) & 0x07);
 
 					period               = new_period;
 					frequency            = 131072.0f / (float)(2048 - period);
@@ -114,9 +117,9 @@ void APU::audioCallback(void *userdata, u8 *stream, int len)
 			float wave   = (ch1_phase < duty_threshold) ? 1.0f : -1.0f;
 			s16   sample = (s16)(wave * volume * 4096.0f);
 
-			if (apu->nr51 & CHANNEL_1_LEFT)
+			if (nr51 & CHANNEL_1_LEFT)
 				samples[i * 2] += (s16)(sample * left_volume);
-			if (apu->nr51 & CHANNEL_1_RIGHT)
+			if (nr51 & CHANNEL_1_RIGHT)
 				samples[i * 2 + 1] += (s16)(sample * right_volume);
 
 			ch1_phase += 1.0f / period_samples;
@@ -125,43 +128,40 @@ void APU::audioCallback(void *userdata, u8 *stream, int len)
 		}
 	}
 
-	if (apu->nr24 & TRIGGER) {
-		ch2_phase             = 0.0f;
-		apu->nr52            |= CHANNEL_2_ON;
-		apu->nr24            &= ~TRIGGER;
+	if (nr24 & TRIGGER) {
+		ch2_phase  = 0.0f;
+		nr52      |= CHANNEL_2_ON;
+		nr24      &= ~TRIGGER;
 
-		ch2_length_counter    = (apu->nr24 & LENGTH_ENABLE)
-		                            ? (64 - (apu->nr21 & LENGTH_TIMER_MASK)) * (44100 / 256)
-		                            : 0;
+		ch2_length_counter =
+		    (nr24 & LENGTH_ENABLE) ? (64 - (nr21 & LENGTH_TIMER_MASK)) * (44100 / 256) : 0;
 
-		ch2_envelope_volume   = (apu->nr22 & INITIAL_VOLUME) >> 4;
-		ch2_envelope_counter  = (apu->nr22 & ENVELOPE_PERIOD) * (44100 / 64);
+		ch2_envelope_volume  = (nr22 & INITIAL_VOLUME) >> 4;
+		ch2_envelope_counter = (nr22 & ENVELOPE_PERIOD) * (44100 / 64);
 
-		if ((apu->nr22 & 0xF8) == 0)
-			apu->nr52 &= ~CHANNEL_2_ON;
+		if ((nr22 & 0xF8) == 0)
+			nr52 &= ~CHANNEL_2_ON;
 	}
 
-	if (apu->nr52 & CHANNEL_2_ON) {
-		u16   period          = ((apu->nr24 & PERIOD_HIGH_MASK) << 8) | apu->nr23;
+	if (nr52 & CHANNEL_2_ON) {
+		u16   period          = ((nr24 & PERIOD_HIGH_MASK) << 8) | nr23;
 		float frequency       = 131072.0f / (float)(2048 - period);
-		float duty_threshold  = DUTY_CYCLES[(apu->nr21 >> 6) & 0x03];
+		float duty_threshold  = DUTY_CYCLES[(nr21 >> 6) & 0x03];
 		float period_samples  = 44100.0f / frequency;
 
-		int   envelope_period = apu->nr22 & ENVELOPE_PERIOD;
+		int   envelope_period = nr22 & ENVELOPE_PERIOD;
 
-		for (int i = 0; i < count; i++) {
-			if ((apu->nr24 & LENGTH_ENABLE) && ch2_length_counter > 0 &&
-			    --ch2_length_counter <= 0) {
-				apu->nr52 &= ~CHANNEL_2_ON;
+		for (int i = 0; i < AUDIO_SAMPLES; i++) {
+			if ((nr24 & LENGTH_ENABLE) && ch2_length_counter > 0 && --ch2_length_counter <= 0) {
+				nr52 &= ~CHANNEL_2_ON;
 				break;
 			}
 
 			if (envelope_period != 0 && ch2_envelope_counter > 0) {
 				ch2_envelope_counter--;
 				if (ch2_envelope_counter <= 0) {
-					ch2_envelope_volume  += (apu->nr22 & ENVELOPE_DIRECTION)
-					                            ? (ch2_envelope_volume < 15)
-					                            : -(ch2_envelope_volume > 0);
+					ch2_envelope_volume  += (nr22 & ENVELOPE_DIRECTION) ? (ch2_envelope_volume < 15)
+					                                                    : -(ch2_envelope_volume > 0);
 					ch2_envelope_counter  = envelope_period * (44100 / 64);
 				}
 			}
@@ -170,49 +170,15 @@ void APU::audioCallback(void *userdata, u8 *stream, int len)
 			float wave   = (ch2_phase < duty_threshold) ? 1.0f : -1.0f;
 			s16   sample = (s16)(wave * volume * 4096.0f);
 
-			if (apu->nr51 & CHANNEL_2_LEFT)
+			if (nr51 & CHANNEL_2_LEFT)
 				samples[i * 2] += (s16)(sample * left_volume);
-			if (apu->nr51 & CHANNEL_2_RIGHT)
+			if (nr51 & CHANNEL_2_RIGHT)
 				samples[i * 2 + 1] += (s16)(sample * right_volume);
 
 			ch2_phase += 1.0f / period_samples;
 			if (ch2_phase >= 1.0f)
 				ch2_phase -= 1.0f;
 		}
-	}
-}
-
-APU::APU(GameBoy &_gb) : gb(_gb)
-{
-	SDL_Init(SDL_INIT_AUDIO);
-
-	SDL_AudioSpec want, have;
-	SDL_memset(&want, 0, sizeof(want));
-
-	want.freq     = 44100;
-	want.format   = AUDIO_S16SYS;
-	want.channels = 2;
-	want.samples  = 1024;
-	want.callback = audioCallback;
-	want.userdata = this;
-
-	audio_device  = SDL_OpenAudioDevice(nullptr, 0, &want, &have, 0);
-	if (audio_device != 0) {
-		SDL_PauseAudioDevice(audio_device, 0);
-	}
-
-	gb.getMMU().register_handler_range(
-	    0xff10, 0xff26, [this](u16 addr) { return read_byte(addr); },
-	    [this](u16 addr, u8 value) { write_byte(addr, value); });
-	gb.getMMU().register_handler_range(
-	    0xff30, 0xff3f, [this](u16 addr) { return read_byte(addr); },
-	    [this](u16 addr, u8 value) { write_byte(addr, value); });
-}
-
-APU::~APU()
-{
-	if (audio_device != 0) {
-		SDL_CloseAudioDevice(audio_device);
 	}
 }
 

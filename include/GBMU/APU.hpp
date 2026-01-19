@@ -1,7 +1,11 @@
 #pragma once
 
-#include <SDL2/SDL.h>
+#include <array>
 #include <types.h>
+
+#define AUDIO_SAMPLES             1024
+#define AUDIO_CHANNELS            2 // Stereo
+#define AUDIO_SAMPLES_BUFFER_SIZE (AUDIO_SAMPLES * AUDIO_CHANNELS)
 
 namespace GBMU {
 
@@ -9,10 +13,9 @@ class GameBoy;
 
 class APU {
 private:
-	GameBoy          &gb;
-	SDL_AudioDeviceID audio_device;
+	GameBoy                                   &gb;
 
-	static void       audioCallback(void *userdata, u8 *stream, int len);
+	std::array<s16, AUDIO_SAMPLES_BUFFER_SIZE> samples;
 
 	enum NR10 {
 		SWEEP_SHIFT     = 0x07,   // Sweep shift (0-7)
@@ -115,10 +118,15 @@ public:
 	APU(GameBoy &);
 	virtual ~APU();
 
-	u8   read_byte(u16 address);
-	void write_byte(u16 address, u8 value);
+	u8         read_byte(u16 address);
+	void       write_byte(u16 address, u8 value);
 
-	u8   wave_pattern[0x10];
+	const s16 *get_audio_buffer() const { return samples.data(); }
+	s16       *get_audio_buffer() { return samples.data(); }
+
+	void       compute_audio();
+
+	u8         wave_pattern[0x10];
 };
 
 } // namespace GBMU

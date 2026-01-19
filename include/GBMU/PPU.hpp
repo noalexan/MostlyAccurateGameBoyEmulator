@@ -1,13 +1,12 @@
 #pragma once
 
-#include <SDL2/SDL.h>
 #include <array>
 #include <span>
 #include <types.h>
 
 #define SCREEN_WIDTH  160
 #define SCREEN_HEIGHT 144
-#define WINDOW_SCALE  8
+#define WINDOW_SCALE  4
 
 namespace GBMU {
 
@@ -16,9 +15,7 @@ class GameBoy;
 class PPU {
 private:
 	GameBoy                                      &gb;
-	SDL_Window                                   *window   = nullptr;
-	SDL_Renderer                                 *renderer = nullptr;
-	SDL_Texture                                  *texture  = nullptr;
+
 	std::array<u32, SCREEN_WIDTH * SCREEN_HEIGHT> framebuffer;
 
 	enum Mode { HBLANK = 0, VBLANK = 1, OAM_SEARCH = 2, PIXEL_TRANSFER = 3 };
@@ -64,7 +61,7 @@ private:
 
 	void                     perform_dma();
 
-	int                      i = 8; // my favorite <3
+	int                      i = 6; // my favorite <3
 
 public:
 	PPU(GameBoy &);
@@ -76,9 +73,8 @@ public:
 	u8                     read_byte(u16 address);
 	void                   write_byte(u16 address, u8 value);
 
-	SDL_Window            *getWindow() const { return window; }
-	SDL_Renderer          *getRenderer() const { return renderer; }
-	SDL_Texture           *getTexture() const { return texture; }
+	const u32             *getFramebuffer() const { return framebuffer.data(); }
+	u32                   *getFramebuffer() { return framebuffer.data(); }
 
 	std::array<u8, 0x2000> vram;
 	std::array<u8, 0xA0>   oam;

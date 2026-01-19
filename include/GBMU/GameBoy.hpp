@@ -12,34 +12,22 @@
 #include <string>
 #include <thread>
 
-#define EMULATION_SPEED 1
-
 namespace GBMU {
 
 class GameBoy {
 private:
-	Cartridge         cartridge;
-	MMU               mmu;
-	APU               apu;
-	PPU               ppu;
-	CPU               cpu;
-	Serial            serial;
-	Timer             timer;
-	Joypad            joypad;
-
-	std::thread       event_thread;
-	std::atomic<bool> running{false};
-
-	bool              speedup{false};
-
-	void              pollEvents();
+	Cartridge cartridge;
+	MMU       mmu;
+	APU       apu;
+	PPU       ppu;
+	CPU       cpu;
+	Serial    serial;
+	Timer     timer;
+	Joypad    joypad;
 
 public:
 	GameBoy(const std::string &);
 	virtual ~GameBoy();
-
-	void       run();
-	void       stop();
 
 	void       compute_frame();
 

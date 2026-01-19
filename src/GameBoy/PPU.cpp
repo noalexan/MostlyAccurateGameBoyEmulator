@@ -6,60 +6,47 @@
 using namespace GBMU;
 
 static const u32 PALETTE_COLORS[][4] = {
-    {0x9BBC0FFF, 0x8BAC0FFF, 0x306230FF, 0x0F380FFF},
-
-    {0xEFDBB2FF, 0xA7997DFF, 0x605847FF, 0x181612FF},
-
     // DMG Classic (greens)
-    {0x9BBC0FFF, 0x8BAC0FFF, 0x306230FF, 0x0F380FFF},
+    {0xFF9BBC0F, 0xFF8BAC0F, 0xFF306230, 0xFF0F380F},
 
     // Pocket (clean grayscale)
-    {0xF8F8F8FF, 0xA8A8A8FF, 0x505050FF, 0x101010FF},
+    {0xFFF8F8F8, 0xFFA8A8A8, 0xFF505050, 0xFF101010},
 
     // Ice Blue (cold LCD)
-    {0xEAF6FFFF, 0xA7D8FFFF, 0x2F6FA3FF, 0x0B1F33FF},
+    {0xFFEAF6FF, 0xFFA7D8FF, 0xFF2F6FA3, 0xFF0B1F33},
 
     // Amber CRT (classic monitor)
-    {0xFFF4D6FF, 0xFFC46BFF, 0xC46A00FF, 0x3A1C00FF},
+    {0xFFFFF4D6, 0xFFFFC46B, 0xFFC46A00, 0xFF3A1C00},
 
     // Sepia (aged paper)
-    {0xF3E9D2FF, 0xD6C19BFF, 0x8B6F47FF, 0x2B1E12FF},
+    {0xFFF3E9D2, 0xFFD6C19B, 0xFF8B6F47, 0xFF2B1E12},
 
     // Purple Night (moody neon)
-    {0xF2E9FFFF, 0xBFA6FFFF, 0x5A2E9CFF, 0x1B062FFF},
+    {0xFFF2E9FF, 0xFFBFA6FF, 0xFF5A2E9C, 0xFF1B062F},
 
     // Cotton Candy (pastel pop)
-    {0xFFF1F7FF, 0xFFB3D9FF, 0x8AD7FFFF, 0x2E4B73FF},
+    {0xFFFFF1F7, 0xFFFFB3D9, 0xFF8AD7FF, 0xFF2E4B73},
 
     // Ocean Deep (blue-green)
-    {0xD8FFF6FF, 0x6FE7D1FF, 0x178F86FF, 0x053B3AFF},
+    {0xFFD8FFF6, 0xFF6FE7D1, 0xFF178F86, 0xFF053B3A},
 
     // Forest Hike (earthy greens)
-    {0xE8F4D9FF, 0x9CCB6BFF, 0x3E7A3BFF, 0x162A19FF},
+    {0xFFE8F4D9, 0xFF9CCB6B, 0xFF3E7A3B, 0xFF162A19},
 
     // Desert Sand (warm muted)
-    {0xFFF2D5FF, 0xE6C38FFF, 0xB07B3FFF, 0x3D2412FF},
+    {0xFFFFF2D5, 0xFFE6C38F, 0xFFB07B3F, 0xFF3D2412},
 
     // Lava (high contrast red/orange)
-    {0xFFE6E0FF, 0xFF7A3DFF, 0xB31212FF, 0x240008FF},
+    {0xFFFFE6E0, 0xFFFF7A3D, 0xFFB31212, 0xFF240008},
 
     // Matrix (mono green glow)
-    {0xD7FFD7FF, 0x6CFF6CFF, 0x00A800FF, 0x002300FF},
+    {0xFFD7FFD7, 0xFF6CFF6C, 0xFF00A800, 0xFF002300},
 };
 
 PPU::PPU(GameBoy &_gb) : gb(_gb)
 {
 	vram.fill(0);
 	oam.fill(0);
-
-	SDL_Init(SDL_INIT_VIDEO);
-	std::string title = "GBMU - " + gb.getCartridge().getTitle();
-	window   = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-	                            SCREEN_WIDTH * WINDOW_SCALE, SCREEN_HEIGHT * WINDOW_SCALE,
-	                            SDL_WINDOW_SHOWN);
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-	texture  = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
-	                             SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	gb.getMMU().register_handler_range(
 	    0x8000, 0x9fff, [this](u16 addr) { return read_byte(addr); },
@@ -74,15 +61,7 @@ PPU::PPU(GameBoy &_gb) : gb(_gb)
 	sprites = std::span<struct Sprite>(reinterpret_cast<struct Sprite *>(oam.data()), 0x28);
 }
 
-PPU::~PPU()
-{
-	if (texture)
-		SDL_DestroyTexture(texture);
-	if (renderer)
-		SDL_DestroyRenderer(renderer);
-	if (window)
-		SDL_DestroyWindow(window);
-}
+PPU::~PPU() {}
 
 void PPU::rotate_palette() { i = (i + 1) % (sizeof(PALETTE_COLORS) / sizeof(*PALETTE_COLORS)); }
 
@@ -270,16 +249,16 @@ void PPU::tick()
 				ly   = 0;
 				stat = (stat & ~0b11) | OAM_SEARCH;
 			}
+
+			if (ly == lyc) {
+				stat |= 1 << 2;
+				if (stat & STAT::LYC) {
+					gb.getCPU().requestInterrupt(CPU::Interrupt::LCD);
+				}
+			}
 		}
 		break;
 	}
-}
-
-void PPU::render()
-{
-	SDL_UpdateTexture(texture, nullptr, framebuffer.data(), SCREEN_WIDTH * 4);
-	SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-	SDL_RenderPresent(renderer);
 }
 
 u8 PPU::read_byte(u16 address)

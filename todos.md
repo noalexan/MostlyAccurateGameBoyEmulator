@@ -1,14 +1,14 @@
 # Todo List
 
-- Fix this sliding bug happening during "The Legend of Zelda: Link's Awekening" intro
 - Handle channels #3 and #4
 - Optimize PPU scanline rendering
-- Emulate link cable (through UDP)
+- Emulate link cable (through UDP?)
 - Handle GameBoy Color Emulation
+- Handle CPU stop
 
 ## List of ideas
 
+- Define a DISABLE_SAVES macro for tests
 - Implement saving/loading states
-- Implement GameBoy Camera
-- Compile core for RetroArch
+- Implement GameBoy Camera/Printer
 - Handle cheats ([Cheats List](https://github.com/libretro/libretro-database/blob/master/cht))

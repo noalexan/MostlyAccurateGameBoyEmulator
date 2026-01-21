@@ -248,6 +248,9 @@ void PPU::tick()
 			if (ly >= 154) {
 				ly   = 0;
 				stat = (stat & ~0b11) | OAM_SEARCH;
+				if (stat & STAT::MODE2) {
+					gb.getCPU().requestInterrupt(CPU::Interrupt::LCD);
+				}
 			}
 
 			if (ly == lyc) {

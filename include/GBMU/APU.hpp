@@ -3,8 +3,9 @@
 #include <array>
 #include <types.h>
 
-#define AUDIO_SAMPLES             1024
+#define AUDIO_SAMPLES             735
 #define AUDIO_CHANNELS            2 // Stereo
+#define AUDIO_SAMPLE_RATE         44100
 #define AUDIO_SAMPLES_BUFFER_SIZE (AUDIO_SAMPLES * AUDIO_CHANNELS)
 
 namespace GBMU {

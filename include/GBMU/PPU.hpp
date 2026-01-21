@@ -68,7 +68,6 @@ public:
 	virtual ~PPU();
 
 	void                   tick();
-	void                   render();
 
 	u8                     read_byte(u16 address);
 	void                   write_byte(u16 address, u8 value);

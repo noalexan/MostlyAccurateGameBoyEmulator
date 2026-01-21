@@ -8,6 +8,11 @@ std::atomic<bool> speedup = false;
 
 static void       pollEvents(GBMU::GameBoy *gb)
 {
+#define handle_scancode(scancode, func)                                                            \
+	case scancode:                                                                                 \
+		func;                                                                                      \
+		break;
+
 	while (running) {
 		SDL_Event event;
 		if (SDL_PollEvent(&event)) {
@@ -17,69 +22,43 @@ static void       pollEvents(GBMU::GameBoy *gb)
 				break;
 			case SDL_KEYDOWN:
 				switch (event.key.keysym.scancode) {
-				case SDL_SCANCODE_W:
-					gb->getJoypad().press(GBMU::Joypad::Input::UP);
-					break;
-				case SDL_SCANCODE_A:
-					gb->getJoypad().press(GBMU::Joypad::Input::LEFT);
-					break;
-				case SDL_SCANCODE_S:
-					gb->getJoypad().press(GBMU::Joypad::Input::DOWN);
-					break;
-				case SDL_SCANCODE_D:
-					gb->getJoypad().press(GBMU::Joypad::Input::RIGHT);
-					break;
-				case SDL_SCANCODE_Q:
-					gb->getJoypad().press(GBMU::Joypad::Input::SELECT);
-					break;
-				case SDL_SCANCODE_E:
-					gb->getJoypad().press(GBMU::Joypad::Input::START);
-					break;
-				case SDL_SCANCODE_SEMICOLON:
-					gb->getJoypad().press(GBMU::Joypad::Input::A);
-					break;
-				case SDL_SCANCODE_L:
-					gb->getJoypad().press(GBMU::Joypad::Input::B);
-					break;
-				case SDL_SCANCODE_SPACE:
-					speedup = true;
-					break;
-				case SDL_SCANCODE_LALT:
-					gb->getPPU().rotate_palette();
-					break;
+#define handle_input(scancode, input) handle_scancode(scancode, gb->getJoypad().press(input))
+
+					handle_input(SDL_SCANCODE_W, GBMU::Joypad::Input::UP);
+					handle_input(SDL_SCANCODE_A, GBMU::Joypad::Input::LEFT);
+					handle_input(SDL_SCANCODE_S, GBMU::Joypad::Input::DOWN);
+					handle_input(SDL_SCANCODE_D, GBMU::Joypad::Input::RIGHT);
+					handle_input(SDL_SCANCODE_Q, GBMU::Joypad::Input::SELECT);
+					handle_input(SDL_SCANCODE_E, GBMU::Joypad::Input::START);
+					handle_input(SDL_SCANCODE_SEMICOLON, GBMU::Joypad::Input::A);
+					handle_input(SDL_SCANCODE_L, GBMU::Joypad::Input::B);
+
+#undef handle_input
+
+					handle_scancode(SDL_SCANCODE_SPACE, speedup = true);
+					handle_scancode(SDL_SCANCODE_LALT, gb->getPPU().rotate_palette());
+
 				default:
 					break;
 				}
 				break;
 			case SDL_KEYUP:
 				switch (event.key.keysym.scancode) {
-				case SDL_SCANCODE_W:
-					gb->getJoypad().release(GBMU::Joypad::Input::UP);
-					break;
-				case SDL_SCANCODE_A:
-					gb->getJoypad().release(GBMU::Joypad::Input::LEFT);
-					break;
-				case SDL_SCANCODE_S:
-					gb->getJoypad().release(GBMU::Joypad::Input::DOWN);
-					break;
-				case SDL_SCANCODE_D:
-					gb->getJoypad().release(GBMU::Joypad::Input::RIGHT);
-					break;
-				case SDL_SCANCODE_Q:
-					gb->getJoypad().release(GBMU::Joypad::Input::SELECT);
-					break;
-				case SDL_SCANCODE_E:
-					gb->getJoypad().release(GBMU::Joypad::Input::START);
-					break;
-				case SDL_SCANCODE_SEMICOLON:
-					gb->getJoypad().release(GBMU::Joypad::Input::A);
-					break;
-				case SDL_SCANCODE_L:
-					gb->getJoypad().release(GBMU::Joypad::Input::B);
-					break;
-				case SDL_SCANCODE_SPACE:
-					speedup = false;
-					break;
+#define handle_input(scancode, input) handle_scancode(scancode, gb->getJoypad().release(input))
+
+					handle_input(SDL_SCANCODE_W, GBMU::Joypad::Input::UP);
+					handle_input(SDL_SCANCODE_A, GBMU::Joypad::Input::LEFT);
+					handle_input(SDL_SCANCODE_S, GBMU::Joypad::Input::DOWN);
+					handle_input(SDL_SCANCODE_D, GBMU::Joypad::Input::RIGHT);
+					handle_input(SDL_SCANCODE_Q, GBMU::Joypad::Input::SELECT);
+					handle_input(SDL_SCANCODE_E, GBMU::Joypad::Input::START);
+					handle_input(SDL_SCANCODE_SEMICOLON, GBMU::Joypad::Input::A);
+					handle_input(SDL_SCANCODE_L, GBMU::Joypad::Input::B);
+
+#undef handle_input
+
+					handle_scancode(SDL_SCANCODE_SPACE, speedup = false);
+
 				default:
 					break;
 				}
@@ -89,6 +68,7 @@ static void       pollEvents(GBMU::GameBoy *gb)
 			}
 		}
 	}
+#undef handle_scancode
 }
 
 static void audioCallback(void *userdata, u8 *stream, int len)
@@ -116,10 +96,10 @@ static void run(GBMU::GameBoy *gb)
 	SDL_AudioSpec want, have;
 	SDL_memset(&want, 0, sizeof(want));
 
-	want.freq                      = 44100;
+	want.freq                      = AUDIO_SAMPLE_RATE;
 	want.format                    = AUDIO_S16SYS;
-	want.channels                  = 2;
-	want.samples                   = 1024;
+	want.channels                  = AUDIO_CHANNELS;
+	want.samples                   = AUDIO_SAMPLES;
 	want.callback                  = audioCallback;
 	want.userdata                  = &gb->getAPU();
 
@@ -164,9 +144,9 @@ static void run(GBMU::GameBoy *gb)
 
 int main(int argc, char *argv[])
 {
-	GBMU::GameBoy gb(argv[1]);
+	auto gb = std::make_unique<GBMU::GameBoy>(argv[1]);
 
-	run(&gb);
+	run(gb.get());
 
 	return 0;
 }

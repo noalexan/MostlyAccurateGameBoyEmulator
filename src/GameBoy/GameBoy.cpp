@@ -1,12 +1,7 @@
 #include <GBMU/GameBoy.hpp>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_scancode.h>
-#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <string>
-#include <thread>
 
 using namespace GBMU;
 

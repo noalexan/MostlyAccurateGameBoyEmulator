@@ -8,9 +8,7 @@
 #include <GBMU/PPU.hpp>
 #include <GBMU/Serial.hpp>
 #include <GBMU/Timer.hpp>
-#include <atomic>
 #include <string>
-#include <thread>
 
 namespace GBMU {
 

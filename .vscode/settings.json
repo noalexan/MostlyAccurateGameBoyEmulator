@@ -8,11 +8,17 @@
 		"keysym",
 		"LALT",
 		"LCDC",
+		"LFSR",
+		"libgbmu",
+		"libretro",
 		"reti",
+		"retroarch",
+		"retropad",
 		"rlca",
 		"rrca",
 		"tima",
-		"wram"
+		"wram",
+		"XRGB"
 	],
 	"C_Cpp.default.cppStandard": "c++20"
 }

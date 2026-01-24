@@ -76,7 +76,7 @@ Cartridge::Cartridge(const std::string &filename)
 
 	close(fd);
 
-	if ((ram_size = getRamDataSize())) {
+	if ((sram_size = getRamDataSize())) {
 		std::cout << "Save file: " << getSaveFilePath() << std::endl;
 
 		std::filesystem::create_directories(saves_folder_path);
@@ -87,17 +87,17 @@ Cartridge::Cartridge(const std::string &filename)
 		}
 
 		struct stat save_sb;
-		if (fstat(fd, &save_sb) == 0 && save_sb.st_size != ram_size) {
-			if (ftruncate(fd, ram_size) < 0) {
+		if (fstat(fd, &save_sb) == 0 && save_sb.st_size != sram_size) {
+			if (ftruncate(fd, sram_size) < 0) {
 				close(fd);
 				throw std::runtime_error(strerror(errno));
 			}
 		}
 
-		ram =
-		    reinterpret_cast<u8 *>(mmap(NULL, ram_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
-		if (ram == MAP_FAILED) {
-			ram = nullptr;
+		sram =
+		    reinterpret_cast<u8 *>(mmap(NULL, sram_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
+		if (sram == MAP_FAILED) {
+			sram = nullptr;
 			close(fd);
 			throw std::runtime_error(strerror(errno));
 		}
@@ -106,8 +106,8 @@ Cartridge::Cartridge(const std::string &filename)
 
 Cartridge::~Cartridge()
 {
-	if (ram)
-		munmap(ram, ram_size);
+	if (sram)
+		munmap(sram, sram_size);
 }
 
 const char *Cartridge::getSaveFilePath()
@@ -221,9 +221,9 @@ u8        Cartridge::read_byte(u16 address)
 		}
 		return 0xff;
 	} else if (address >= 0xa000 && address <= 0xbfff) {
-		if (ram_enabled) {
-			size_t ram_offset = ram_bank * 0x2000;
-			return ram[ram_offset + (address - 0xa000)];
+		if (sram_enabled) {
+			size_t sram_offset = sram_bank * 0x2000;
+			return sram[sram_offset + (address - 0xa000)];
 		}
 		return 0xff;
 	}
@@ -235,7 +235,7 @@ void Cartridge::write_byte(u16 address, u8 value)
 	u8 mbc_type = getCartridgeType();
 
 	if (address <= 0x1fff) {
-		ram_enabled = (value & 0x0f) == 0x0a;
+		sram_enabled = (value & 0x0f) == 0x0a;
 	} else if (address >= 0x2000 && address <= 0x3fff) {
 		if (mbc_type >= 0x01 && mbc_type <= 0x03) {
 			u8 bank = value & 0x1f;
@@ -257,10 +257,10 @@ void Cartridge::write_byte(u16 address, u8 value)
 			if (banking_mode == 0) {
 				rom_bank = (rom_bank & 0x1f) | ((value & 0x03) << 5);
 			} else {
-				ram_bank = value & 0x03;
+				sram_bank = value & 0x03;
 			}
 		} else if (mbc_type >= 0x0f && mbc_type <= 0x13) {
-			ram_bank = value & 0x0f;
+			sram_bank = value & 0x0f;
 		} else if (mbc_type >= 0x19 && mbc_type <= 0x1e) {
 			rom_bank = (rom_bank & 0xff) | ((value & 0x01) << 8);
 			if (rom_bank == 0)
@@ -271,9 +271,9 @@ void Cartridge::write_byte(u16 address, u8 value)
 			banking_mode = value & 0x01;
 		}
 	} else if (address >= 0xa000 && address <= 0xbfff) {
-		if (ram_enabled) {
-			size_t ram_offset                    = ram_bank * 0x2000;
-			ram[ram_offset + (address - 0xa000)] = value;
+		if (sram_enabled) {
+			size_t sram_offset                    = sram_bank * 0x2000;
+			sram[sram_offset + (address - 0xa000)] = value;
 		}
 	}
 }

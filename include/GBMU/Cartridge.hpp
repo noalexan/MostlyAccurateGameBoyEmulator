@@ -11,12 +11,12 @@ class Cartridge {
 private:
 	std::vector<u8>          rom_data;
 	size_t                   rom_size;
-	u8                      *ram = nullptr;
-	size_t                   ram_size;
+	u8                      *sram = nullptr;
+	size_t                   sram_size;
 
 	u8                       rom_bank     = 1;
-	u8                       ram_bank     = 0;
-	bool                     ram_enabled  = false;
+	u8                       sram_bank     = 0;
+	bool                     sram_enabled  = false;
 	u8                       banking_mode = 0;
 
 	static const std::string saves_folder_path;

@@ -9,17 +9,17 @@ namespace GBMU {
 
 class Cartridge {
 private:
-	std::vector<u8>          rom_data;
-	size_t                   rom_size;
-	u8                      *sram = nullptr;
-	size_t                   sram_size;
+	std::vector<u8> rom_data;
+	size_t          rom_size;
+	u8             *sram = nullptr;
+	size_t          sram_size;
 
-	u8                       rom_bank     = 1;
-	u8                       sram_bank     = 0;
-	bool                     sram_enabled  = false;
-	u8                       banking_mode = 0;
+	u8   rom_bank     = 1;
+	u8   sram_bank    = 0;
+	bool sram_enabled = false;
+	u8   banking_mode = 0;
 
-	std::string              save_file_path;
+	const std::string save_file_path;
 
 	static const std::string CARTRIDGE_TYPES[256];
 
@@ -36,15 +36,14 @@ public:
 	u8          getHeaderChecksum() const;
 	u16         getGlobalChecksum() const;
 
+	u8       *getRomData();
+	const u8 *getRomData() const;
 
-	u8         *getRomData();
-	const u8   *getRomData() const;
+	size_t getRomDataSize() const;
+	size_t getRamDataSize() const;
 
-	size_t      getRomDataSize() const;
-	size_t      getRamDataSize() const;
-
-	u8          read_byte(u16 address);
-	void        write_byte(u16 address, u8 value);
+	u8   read_byte(u16 address);
+	void write_byte(u16 address, u8 value);
 };
 
 } // namespace GBMU

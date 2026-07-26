@@ -99,18 +99,18 @@ void PPU::tick()
 
 	case PIXEL_TRANSFER:
 		if (!scanline_rendered) {
-			u32 *scanline_ptr           = &framebuffer[ly * SCREEN_WIDTH];
+			u32 *scanline_ptr = &framebuffer[ly * SCREEN_WIDTH];
 
-			u8  *bg_tile_map            = &vram[(lcdc & LCDC::BG_TILE_MAP) ? 0x1C00 : 0x1800];
-			u8  *win_tile_map           = &vram[(lcdc & LCDC::WINDOW_TILE_MAP) ? 0x1C00 : 0x1800];
+			u8 *bg_tile_map  = &vram[(lcdc & LCDC::BG_TILE_MAP) ? 0x1C00 : 0x1800];
+			u8 *win_tile_map = &vram[(lcdc & LCDC::WINDOW_TILE_MAP) ? 0x1C00 : 0x1800];
 
-			u8   bg_y                   = ly + scy;
-			u16  bg_tile_row            = (bg_y >> 3) << 5;
-			u8   bg_line                = bg_y % 8;
+			u8  bg_y        = ly + scy;
+			u16 bg_tile_row = (bg_y >> 3) << 5;
+			u8  bg_line     = bg_y % 8;
 
-			u8   win_y                  = ly - wy;
-			u16  win_tile_row           = (win_y >> 3) << 5;
-			u8   win_line               = win_y % 8;
+			u8  win_y        = ly - wy;
+			u16 win_tile_row = (win_y >> 3) << 5;
+			u8  win_line     = win_y % 8;
 
 			bool obj_long_mode          = lcdc & LCDC::OBJ_HEIGHT;
 			bool is_window_on_that_line = lcdc & LCDC::WINDOW_ENABLE && ly >= wy;
@@ -134,32 +134,32 @@ void PPU::tick()
 
 				if (is_window_on_that_line && x + 7 >= wx) {
 					/* Window */
-					u8  win_x        = x + 7 - wx;
+					u8 win_x = x + 7 - wx;
 
 					u8  tile_column  = win_x >> 3;
 					u8  tile_index   = win_tile_map[win_tile_row + tile_column];
 					u16 tile_address = compute_tile_address(tile_index);
 
-					u8  byte1        = vram[tile_address + win_line * 2];
-					u8  byte2        = vram[tile_address + win_line * 2 + 1];
+					u8 byte1 = vram[tile_address + win_line * 2];
+					u8 byte2 = vram[tile_address + win_line * 2 + 1];
 
-					u8  bit          = 7 - (win_x % 8);
-					color_index      = ((byte2 >> bit) & 1) << 1 | ((byte1 >> bit) & 1);
+					u8 bit      = 7 - (win_x % 8);
+					color_index = ((byte2 >> bit) & 1) << 1 | ((byte1 >> bit) & 1);
 				}
 
 				else {
 					/* Background */
-					u8  bg_x         = x + scx;
+					u8 bg_x = x + scx;
 
 					u8  tile_column  = bg_x >> 3;
 					u8  tile_index   = bg_tile_map[bg_tile_row + tile_column];
 					u16 tile_address = compute_tile_address(tile_index);
 
-					u8  byte1        = vram[tile_address + bg_line * 2];
-					u8  byte2        = vram[tile_address + bg_line * 2 + 1];
+					u8 byte1 = vram[tile_address + bg_line * 2];
+					u8 byte2 = vram[tile_address + bg_line * 2 + 1];
 
-					u8  bit          = 7 - (bg_x % 8);
-					color_index      = ((byte2 >> bit) & 1) << 1 | ((byte1 >> bit) & 1);
+					u8 bit      = 7 - (bg_x % 8);
+					color_index = ((byte2 >> bit) & 1) << 1 | ((byte1 >> bit) & 1);
 				}
 
 				u8 palette_color = (bgp >> (color_index << 1)) & 0x03;
@@ -175,17 +175,17 @@ void PPU::tick()
 
 					u16 tile_address;
 					if (obj_long_mode) {
-						tile_address  = (sprite->index & 0xFE) * 16;
+						tile_address = (sprite->index & 0xFE) * 16;
 						tile_address += ((sprite->attr & 0x40) ? (15 - sprite_y) : sprite_y) * 2;
 					} else {
-						tile_address  = sprite->index * 16;
+						tile_address = sprite->index * 16;
 						tile_address += ((sprite->attr & 0x40) ? (7 - sprite_y) : sprite_y) * 2;
 					}
 
-					u8 byte1    = vram[tile_address];
-					u8 byte2    = vram[tile_address + 1];
+					u8 byte1 = vram[tile_address];
+					u8 byte2 = vram[tile_address + 1];
 
-					u8 bit      = (sprite->attr & 0x20) ? sprite_x : (7 - sprite_x);
+					u8 bit = (sprite->attr & 0x20) ? sprite_x : (7 - sprite_x);
 
 					color_index = ((byte2 >> bit) & 1) << 1 | ((byte1 >> bit) & 1);
 					if (color_index) {

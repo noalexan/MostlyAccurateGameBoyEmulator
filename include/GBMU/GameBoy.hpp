@@ -27,7 +27,7 @@ public:
 	GameBoy(const std::string &);
 	virtual ~GameBoy();
 
-	void       compute_frame();
+	void compute_frame();
 
 	APU       &getAPU() { return apu; }
 	PPU       &getPPU() { return ppu; }

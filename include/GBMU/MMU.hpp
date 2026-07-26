@@ -16,16 +16,16 @@ public:
 	using WriteHandler = std::function<void(u16, u8)>;
 
 private:
-	GameBoy                          &gb;
+	GameBoy &gb;
 
 	std::array<ReadHandler, 0x10000>  read_handlers;
 	std::array<WriteHandler, 0x10000> write_handlers;
 
-	u8                                bios_disabled = 0;
-	u8                                wram[0x2000];
-	u8                                eram[0x2000];
-	u8                                io_registers[0x80];
-	u8                                hram[0x7F];
+	u8 bios_disabled = 0;
+	u8 wram[0x2000];
+	u8 eram[0x2000];
+	u8 io_registers[0x80];
+	u8 hram[0x7F];
 
 public:
 	MMU(GameBoy &);

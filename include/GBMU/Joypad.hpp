@@ -13,7 +13,7 @@ private:
 
 	enum P1 { BUTTONS = 1 << 5, DPAD = 1 << 4 };
 
-	u8   p1     = 0x00;
+	u8 p1 = 0x00;
 
 	bool start  = false;
 	bool select = false;

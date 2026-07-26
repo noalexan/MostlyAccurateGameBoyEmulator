@@ -12,14 +12,14 @@ class GameBoy;
 class CPU {
 private:
 	GameBoy &gb;
-	int      ticks                  = 0;
+	int      ticks = 0;
 
-	u8       interrupt_flags        = 0;
-	u8       interrupt_enable       = 0;
-	u8       ime                    = 0;
-	bool     enable_interrupt_delay = false;
+	u8   interrupt_flags        = 0;
+	u8   interrupt_enable       = 0;
+	u8   ime                    = 0;
+	bool enable_interrupt_delay = false;
 
-	bool     halted                 = false;
+	bool halted = false;
 
 	enum Flag { ZERO = 1 << 7, NEGATIVE = 1 << 6, HALF_CARRY = 1 << 5, CARRY = 1 << 4 };
 
@@ -44,16 +44,16 @@ private:
 		u16 pc;
 	} registers;
 
-	u8          read_byte(u16 address);
-	void        write_byte(u16 address, u8 value);
+	u8   read_byte(u16 address);
+	void write_byte(u16 address, u8 value);
 
-	inline u8   imm8() { return read_byte(registers.pc++); }
-	inline u16  imm16() { return imm8() | (imm8() << 8); }
+	inline u8  imm8() { return read_byte(registers.pc++); }
+	inline u16 imm16() { return imm8() | (imm8() << 8); }
 
 	inline void set_r16(u16 &r16, u16 address)
 	{
 		ticks += TICKS_PER_CYCLES;
-		r16    = address;
+		r16 = address;
 	}
 
 	inline u8 read_r8(u8 code)
@@ -182,11 +182,11 @@ private:
 		}
 	}
 
-	inline u8   b3(u8 value) { return (1 << (value & 0b111)); }
+	inline u8 b3(u8 value) { return (1 << (value & 0b111)); }
 
 	inline void push(u8 value) { write_byte(--registers.sp, value); }
 
-	inline u8   pop() { return read_byte(registers.sp++); }
+	inline u8 pop() { return read_byte(registers.sp++); }
 
 	inline bool getZeroFlag() const { return registers.f & ZERO; }
 	inline bool getNegativeFlag() const { return registers.f & NEGATIVE; }
@@ -218,8 +218,8 @@ public:
 	virtual ~CPU();
 	void tick();
 
-	u8  &getInterruptFlags() { return interrupt_flags; }
-	u8  &getInterruptEnable() { return interrupt_enable; }
+	u8 &getInterruptFlags() { return interrupt_flags; }
+	u8 &getInterruptEnable() { return interrupt_enable; }
 
 	enum Interrupt {
 		VBLANK = 1 << 0,

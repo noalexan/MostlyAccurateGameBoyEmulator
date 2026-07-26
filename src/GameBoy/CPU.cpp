@@ -9,12 +9,12 @@ using namespace GBMU;
 
 CPU::CPU(GameBoy &_gb) : gb(_gb), registers{}
 {
-	registers.af           = 0x01B0;
-	registers.bc           = 0x0013;
-	registers.de           = 0x00D8;
-	registers.hl           = 0x014D;
-	registers.sp           = 0xFFFE;
-	registers.pc           = 0x0100;
+	registers.af = 0x01B0;
+	registers.bc = 0x0013;
+	registers.de = 0x00D8;
+	registers.hl = 0x014D;
+	registers.sp = 0xFFFE;
+	registers.pc = 0x0100;
 
 	interrupt_flags        = 0x00;
 	interrupt_enable       = 0x00;
@@ -60,10 +60,10 @@ void CPU::tick()
 		for (int i = 0; i < 5; i++) {
 			if (fired_interrupts & (1 << i)) {
 				interrupt_flags &= ~(1 << i);
-				ime              = 0;
+				ime = 0;
 
 				// Interrupt handling takes 5 machine cycles
-				ticks           += TICKS_PER_CYCLES * 2;
+				ticks += TICKS_PER_CYCLES * 2;
 				push(registers.pc >> 8);
 				push(registers.pc);
 				set_r16(registers.pc, 0x40 + i * 8);
@@ -1143,9 +1143,9 @@ void CPU::tick()
 
 	// add sp, imm8
 	case 0xE8: {
-		ticks      += 4;
-		s8  offset  = static_cast<s8>(imm8());
-		u16 result  = registers.sp + offset;
+		ticks += 4;
+		s8  offset = static_cast<s8>(imm8());
+		u16 result = registers.sp + offset;
 		setZeroFlag(false);
 		setNegativeFlag(false);
 		setHalfCarryFlag((registers.sp & 0x0F) + (offset & 0x0F) > 0x0F);

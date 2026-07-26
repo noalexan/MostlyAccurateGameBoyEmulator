@@ -11,14 +11,14 @@ class Timer {
 private:
 	GameBoy &gb;
 
-	u16      div_counter   = 0;
+	u16 div_counter = 0;
 
-	u8       div           = 0x00; // DIV (will be managed by div_counter)
-	u8       tima          = 0x00; // TIMA - Timer counter
-	u8       tma           = 0x00; // TMA - Timer modulo
-	u8       tac           = 0x00; // TAC - Timer control
+	u8 div  = 0x00; // DIV (will be managed by div_counter)
+	u8 tima = 0x00; // TIMA - Timer counter
+	u8 tma  = 0x00; // TMA - Timer modulo
+	u8 tac  = 0x00; // TAC - Timer control
 
-	int      timer_counter = 0;
+	int timer_counter = 0;
 
 public:
 	Timer(GameBoy &);

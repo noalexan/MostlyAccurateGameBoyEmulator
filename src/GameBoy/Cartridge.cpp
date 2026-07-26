@@ -92,8 +92,8 @@ Cartridge::Cartridge(const std::string &filename) : save_file_path(filename + ".
 			}
 		}
 
-		sram =
-		    reinterpret_cast<u8 *>(mmap(NULL, sram_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
+		sram = reinterpret_cast<u8 *>(
+		    mmap(NULL, sram_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
 		if (sram == MAP_FAILED) {
 			sram = nullptr;
 			close(fd);
@@ -179,15 +179,19 @@ u16 Cartridge::getGlobalChecksum() const
 	return (rom_data[0x14E] << 8) | rom_data[0x14F];
 }
 
-u8       *Cartridge::getRomData() { return rom_data.data(); }
+u8 *Cartridge::getRomData() { return rom_data.data(); }
 
 const u8 *Cartridge::getRomData() const { return rom_data.data(); }
 
-size_t    Cartridge::getRomDataSize() const { return rom_size; }
+size_t Cartridge::getRomDataSize() const { return rom_size; }
 
-size_t    Cartridge::getRamDataSize() const { return getRamSize() * 0x2000; }
+size_t Cartridge::getRamDataSize() const
+{
+	int ram_size = getRamSize();
+	return ram_size ? (ram_size + 1) * 0x2000 : 0;
+}
 
-u8        Cartridge::read_byte(u16 address)
+u8 Cartridge::read_byte(u16 address)
 {
 	if (address <= 0x3fff) {
 		return rom_data[address];
@@ -249,7 +253,7 @@ void Cartridge::write_byte(u16 address, u8 value)
 		}
 	} else if (address >= 0xa000 && address <= 0xbfff) {
 		if (sram_enabled) {
-			size_t sram_offset                    = sram_bank * 0x2000;
+			size_t sram_offset                     = sram_bank * 0x2000;
 			sram[sram_offset + (address - 0xa000)] = value;
 		}
 	}

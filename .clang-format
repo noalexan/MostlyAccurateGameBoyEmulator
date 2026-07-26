@@ -4,15 +4,8 @@ ColumnLimit: 100
 IndentWidth: 4
 UseTab: ForIndentation
 TabWidth: 4
-AlignConsecutiveAssignments:
-  Enabled: true
-  AcrossEmptyLines: true
-  AcrossComments: true
-  AlignCompound: true
-  PadOperators: true
-AlignConsecutiveDeclarations:
-  Enabled: true
-  AcrossEmptyLines: true
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: Consecutive
 AlignConsecutiveMacros: Consecutive
 BreakBeforeBraces: Custom
 BraceWrapping:

@@ -1,12 +1,15 @@
 #include <GBMU/GameBoy.hpp>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
+#include <SDL_scancode.h>
 #include <thread>
+
+#define WINDOW_SCALE 8
 
 std::atomic<bool> running = true;
 std::atomic<bool> speedup = false;
 
-static void       pollEvents(GBMU::GameBoy *gb)
+static void pollEvents(GBMU::GameBoy *gb)
 {
 #define handle_scancode(scancode, func)                                                            \
 	case scancode:                                                                                 \
@@ -36,7 +39,7 @@ static void       pollEvents(GBMU::GameBoy *gb)
 #undef handle_input
 
 					handle_scancode(SDL_SCANCODE_SPACE, speedup = true);
-					handle_scancode(SDL_SCANCODE_LALT, gb->getPPU().rotate_palette());
+					handle_scancode(SDL_SCANCODE_0, gb->getPPU().rotate_palette());
 
 				default:
 					break;
@@ -83,7 +86,7 @@ static void run(GBMU::GameBoy *gb)
 {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
-	std::string   title    = "GBMU - " + gb->getCartridge().getTitle();
+	std::string title = "GBMU - " + gb->getCartridge().getTitle();
 
 	SDL_Window   *window   = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED,
 	                                          SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH * WINDOW_SCALE,
@@ -96,12 +99,12 @@ static void run(GBMU::GameBoy *gb)
 	SDL_AudioSpec want, have;
 	SDL_memset(&want, 0, sizeof(want));
 
-	want.freq                      = AUDIO_SAMPLE_RATE;
-	want.format                    = AUDIO_S16SYS;
-	want.channels                  = AUDIO_CHANNELS;
-	want.samples                   = AUDIO_SAMPLES;
-	want.callback                  = audioCallback;
-	want.userdata                  = &gb->getAPU();
+	want.freq     = AUDIO_SAMPLE_RATE;
+	want.format   = AUDIO_S16SYS;
+	want.channels = AUDIO_CHANNELS;
+	want.samples  = AUDIO_SAMPLES;
+	want.callback = audioCallback;
+	want.userdata = &gb->getAPU();
 
 	SDL_AudioDeviceID audio_device = SDL_OpenAudioDevice(nullptr, 0, &want, &have, 0);
 	if (audio_device != 0) {

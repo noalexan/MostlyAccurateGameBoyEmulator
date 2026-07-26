@@ -14,7 +14,7 @@ class GameBoy;
 
 class APU {
 private:
-	GameBoy                                   &gb;
+	GameBoy &gb;
 
 	std::array<s16, AUDIO_SAMPLES_BUFFER_SIZE> samples;
 
@@ -115,19 +115,27 @@ private:
 	u8 nr51 = 0xF3; // Sound panning
 	u8 nr52 = 0xF1; // Sound on/off
 
+	float left_volume;
+	float right_volume;
+
+	void compute_channel_1();
+	void compute_channel_2();
+	void compute_channel_3();
+	void compute_channel_4();
+
 public:
 	APU(GameBoy &);
 	virtual ~APU();
 
-	u8         read_byte(u16 address);
-	void       write_byte(u16 address, u8 value);
+	u8   read_byte(u16 address);
+	void write_byte(u16 address, u8 value);
 
 	const s16 *get_audio_buffer() const { return samples.data(); }
 	s16       *get_audio_buffer() { return samples.data(); }
 
-	void       compute_audio();
+	void compute_audio();
 
-	u8         wave_pattern[0x10];
+	u8 wave_pattern[0x10];
 };
 
 } // namespace GBMU

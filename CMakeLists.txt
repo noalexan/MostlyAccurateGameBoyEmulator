@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 
 project(gbmu VERSION 1.0 LANGUAGES CXX)
 
@@ -22,11 +22,7 @@ include_directories(${CMAKE_SOURCE_DIR}/lib/libretro-common/include)
 
 # libgbmu.so
 
-## OpenSSL
-find_package(OpenSSL REQUIRED)
-
 add_library(gbmu SHARED ${SOURCES})
-target_link_libraries(gbmu OpenSSL::Crypto)
 
 # emulator
 

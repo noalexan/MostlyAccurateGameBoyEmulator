@@ -1,8 +1,6 @@
 #include <GBMU/GameBoy.hpp>
 #include <GBMU/MMU.hpp>
 #include <bios.h>
-#include <iomanip>
-#include <iostream>
 
 using namespace GBMU;
 

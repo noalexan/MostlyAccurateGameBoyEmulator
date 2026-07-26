@@ -2,20 +2,15 @@
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
-#include <filesystem>
 #include <iomanip>
 #include <iostream>
-#include <openssl/evp.h>
-#include <openssl/md5.h>
-#include <sstream>
+#include <stdexcept>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <types.h>
 #include <unistd.h>
 
 using namespace GBMU;
-
-const std::string Cartridge::saves_folder_path    = "saves";
 
 const std::string Cartridge::CARTRIDGE_TYPES[256] = {
     "ROM ONLY",
@@ -47,7 +42,7 @@ const std::string Cartridge::CARTRIDGE_TYPES[256] = {
     "MBC8+RAM+BATTERY",
 };
 
-Cartridge::Cartridge(const std::string &filename)
+Cartridge::Cartridge(const std::string &filename) : save_file_path(filename + ".sav")
 {
 	int fd = open(filename.c_str(), O_RDONLY);
 	if (fd < 0) {
@@ -77,17 +72,20 @@ Cartridge::Cartridge(const std::string &filename)
 	close(fd);
 
 	if ((sram_size = getRamDataSize())) {
-		std::cout << "Save file: " << getSaveFilePath() << std::endl;
+		std::cout << "Save file: " << save_file_path << std::endl;
 
-		std::filesystem::create_directories(saves_folder_path);
-
-		fd = open(getSaveFilePath(), O_RDWR | O_CREAT, 0644);
+		fd = open(save_file_path.c_str(), O_RDWR | O_CREAT, 0644);
 		if (fd < 0) {
 			throw std::runtime_error(strerror(errno));
 		}
 
 		struct stat save_sb;
-		if (fstat(fd, &save_sb) == 0 && save_sb.st_size != sram_size) {
+
+		if (fstat(fd, &save_sb) != 0) {
+			throw std::runtime_error(strerror(errno));
+		}
+
+		if (save_sb.st_size != sram_size) {
 			if (ftruncate(fd, sram_size) < 0) {
 				close(fd);
 				throw std::runtime_error(strerror(errno));
@@ -106,31 +104,10 @@ Cartridge::Cartridge(const std::string &filename)
 
 Cartridge::~Cartridge()
 {
-	if (sram)
+	if (sram) {
+		msync(sram, sram_size, MS_SYNC);
 		munmap(sram, sram_size);
-}
-
-const char *Cartridge::getSaveFilePath()
-{
-	if (save_file_path.empty()) {
-		EVP_MD_CTX   *context = EVP_MD_CTX_new();
-		const EVP_MD *md      = EVP_md5();
-		unsigned char md_value[EVP_MAX_MD_SIZE];
-		unsigned int  md_len;
-
-		EVP_DigestInit_ex2(context, md, NULL);
-		EVP_DigestUpdate(context, getRomData(), getRomDataSize());
-		EVP_DigestFinal_ex(context, md_value, &md_len);
-		EVP_MD_CTX_free(context);
-
-		std::stringstream ss;
-		for (unsigned int i = 0; i < md_len; i++)
-			ss << std::hex << std::setw(2) << std::setfill('0') << (int)md_value[i];
-
-		save_file_path = saves_folder_path + '/' + ss.str();
 	}
-
-	return save_file_path.c_str();
 }
 
 std::string Cartridge::getTitle() const

@@ -79,11 +79,15 @@ Cartridge::Cartridge(const std::string &filename) : save_file_path(filename + ".
 			throw std::runtime_error(strerror(errno));
 		}
 
+		std::cout << "Save RAM Size: 0x" << std::hex << std::setw(4) << sram_size << "\n";
+
 		struct stat save_sb;
 
 		if (fstat(fd, &save_sb) != 0) {
 			throw std::runtime_error(strerror(errno));
 		}
+
+		std::cout << "st_size: 0x" << std::hex << std::setw(4) << save_sb.st_size << std::endl;
 
 		if (save_sb.st_size != sram_size) {
 			if (ftruncate(fd, sram_size) < 0) {
@@ -120,7 +124,7 @@ std::string Cartridge::getTitle() const
 	for (int i = 0; i < 16; i++) {
 		char c = rom_data[0x134 + i];
 
-		if ('A' > c || c > 'Z')
+		if (('A' > c || c > 'Z') && c != 0x20)
 			break;
 
 		title += c;

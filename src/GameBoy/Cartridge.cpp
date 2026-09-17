@@ -72,22 +72,16 @@ Cartridge::Cartridge(const std::string &filename) : save_file_path(filename + ".
 	close(fd);
 
 	if ((sram_size = getRamDataSize())) {
-		std::cout << "Save file: " << save_file_path << std::endl;
-
 		fd = open(save_file_path.c_str(), O_RDWR | O_CREAT, 0644);
 		if (fd < 0) {
 			throw std::runtime_error(strerror(errno));
 		}
-
-		std::cout << "Save RAM Size: 0x" << std::hex << std::setw(4) << sram_size << "\n";
 
 		struct stat save_sb;
 
 		if (fstat(fd, &save_sb) != 0) {
 			throw std::runtime_error(strerror(errno));
 		}
-
-		std::cout << "st_size: 0x" << std::hex << std::setw(4) << save_sb.st_size << std::endl;
 
 		if (save_sb.st_size != sram_size) {
 			if (ftruncate(fd, sram_size) < 0) {

@@ -1,6 +1,5 @@
 #include <GBMU/APU.hpp>
 #include <GBMU/GameBoy.hpp>
-#include <cmath>
 
 using namespace GBMU;
 

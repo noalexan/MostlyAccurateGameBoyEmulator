@@ -5,6 +5,8 @@
 - Emulate link cable (through UDP?)
 - Handle GameBoy Color Emulation
 - Handle CPU stop
+- Only save if cartridge contains battery
+- Check file size, empty files causes crash
 
 ## List of ideas
 

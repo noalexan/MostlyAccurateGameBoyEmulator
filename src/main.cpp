@@ -40,6 +40,7 @@ static void pollEvents(GBMU::GameBoy *gb)
 
 					handle_scancode(SDL_SCANCODE_SPACE, speedup = true);
 					handle_scancode(SDL_SCANCODE_0, gb->getPPU().rotate_palette());
+					handle_scancode(SDL_SCANCODE_ESCAPE, running = false);
 
 				default:
 					break;
@@ -86,11 +87,11 @@ static void run(GBMU::GameBoy *gb)
 {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
-	std::string title = "GBMU - " + gb->getCartridge().getTitle();
+	std::string title = "MAGE - " + gb->getCartridge().getTitle();
 
-	SDL_Window   *window   = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED,
-	                                          SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH * WINDOW_SCALE,
-	                                          SCREEN_HEIGHT * WINDOW_SCALE, SDL_WINDOW_SHOWN);
+	SDL_Window *window = SDL_CreateWindow(
+	    title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH * WINDOW_SCALE,
+	    SCREEN_HEIGHT * WINDOW_SCALE, SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS);
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	SDL_Texture  *texture =
 	    SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING,

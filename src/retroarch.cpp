@@ -1,5 +1,5 @@
+#include "GBMU/GameBoy.hpp"
 #include "GBMU/PPU.hpp"
-#include <GBMU/GameBoy.hpp>
 #include <iostream>
 #include <libretro.h>
 
